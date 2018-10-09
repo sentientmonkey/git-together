@@ -32,12 +32,21 @@ git config --global --add include.path ~/.git-together
 # Setting the default domain
 git config --file .git-together --add git-together.domain rocinante.com
 
+
 # Adding a couple authors
 git config --file .git-together --add git-together.authors.jh 'James Holden; jholden'
 git config --file .git-together --add git-together.authors.nn 'Naomi Nagata; nnagata'
 
 # Adding an author with a different domain
 git config --file .git-together --add git-together.authors.ca 'Chrisjen Avasarala; avasarala@un.gov'
+```
+If you are using git within an editor or IDE, set your git binary to `git-together`
+for that editor, then set where your git binary lives for git-together config.
+This allows git-together to find git when it is not in the PATH of that IDE
+or editor.
+
+```bash
+git config --file ~/.git-together --add git-together.git-executable '/usr/local/bin/git'
 ```
 
 ## Usage

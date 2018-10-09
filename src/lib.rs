@@ -30,6 +30,8 @@ pub fn run() -> Result<()> {
 
     let triggers = ["with", "together"];
     let mut gt = GitTogether::new()?;
+    let mut cmd = Command::new(gt.git_command());
+
     match *args.as_slice() {
         [sub_cmd] if triggers.contains(&sub_cmd) => {
             let inits = gt.get_active()?;
@@ -68,7 +70,6 @@ pub fn run() -> Result<()> {
                 env::set_var("GIT_TOGETHER_NO_SIGNOFF", "1");
             }
 
-            let mut cmd = Command::new("git");
             let cmd = cmd.arg(sub_cmd);
             let cmd = gt.signoff(cmd)?;
             let cmd = cmd.args(rest);
@@ -79,8 +80,7 @@ pub fn run() -> Result<()> {
             }
         }
         [ref args..] => {
-            Command::new("git")
-                .args(args)
+                cmd.args(args)
                 .status()
                 .chain_err(|| "failed to execute process")?;
         }
@@ -240,6 +240,12 @@ impl<C: config::Config> GitTogether<C> {
         self.author_parser
             .parse(raw)
             .chain_err(|| format!("invalid author for '{}': '{}'", initials, raw))
+    }
+
+    pub fn git_command(&self) -> String {
+        return self.config
+            .get(&namespaced("git-executable"))
+            .unwrap_or_else(|_| String::from("git"))
     }
 }
 
@@ -431,6 +437,32 @@ mod tests {
         assert_eq!(gt.is_signoff_cmd("m"), true);
         assert_eq!(gt.is_signoff_cmd("rv"), true);
     }
+
+    #[test]
+    fn git_command_default() {
+        let config = MockConfig::new(&[]);
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
+        let gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        assert_eq!(gt.git_command(), "git")
+    }
+
+
+    #[test]
+    fn git_command_custom() {
+        let config = MockConfig::new(&[("git-together.git-executable", "/usr/local/bin/git")]);
+        let author_parser = AuthorParser { domain: Some("rocinante.com".into()) };
+        let gt = GitTogether {
+            config: config,
+            author_parser: author_parser,
+        };
+
+        assert_eq!(gt.git_command(), "/usr/local/bin/git")
+    }
+
 
     struct MockConfig {
         data: HashMap<String, String>,
